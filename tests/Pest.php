@@ -1,6 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\User;
 
-uses(RefreshDatabase::class)->in('Feature');
-uses(RefreshDatabase::class)->in('Unit');
+pest()->extend(Tests\TestCase::class)
+    ->use(Illuminate\Foundation\Testing\LazilyRefreshDatabase::class);
+
+function loggedUser(?User $user)
+{
+    $user = $user ?? User::factory();
+    test()->actingAs($user);
+}
