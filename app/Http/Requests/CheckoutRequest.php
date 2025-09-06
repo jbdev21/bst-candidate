@@ -15,24 +15,14 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'quote_id' => ['required', 'integer'],
-            'headers.Idempotency-Key' => ['required', 'string'],
         ];
     }
 
-    public function validationData()
+    public function prepareForValidation()
     {
-        return array_merge($this->all(), [
-            'headers' => [
-                'Idempotency-Key' => $this->header('Idempotency-Key'),
-            ],
+        $this->merge([
+            'idempotency_key' => $this->header('Idempotency-Key'),
         ]);
     }
 
-    public function messages()
-    {
-        return [
-            'headers.Idempotency-Key.required' => 'Idempotency-Key is required',
-            'headers.Idempotency-Key.string' => 'Idempotency-Key header should be string',
-        ];
-    }
 }

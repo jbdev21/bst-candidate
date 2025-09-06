@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, onMounted } from 'vue';
 
 interface Product {
     id: number;
@@ -19,9 +19,6 @@ interface Quote {
     quote_expires_at: string;
 }
 
-interface ApiError {
-    error: string;
-}
 
 interface Props {
     products: Product[];
@@ -29,11 +26,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const sku = ref<string>(props.products[0]?.sku || 'GOLD1OZ');
+const sku = ref<string>(props.products[0]?.sku);
 const qty = ref<number>(1);
 const quote = ref<Quote | null>(null);
 const error = ref<string>('');
 const success = ref<string>('');
+const token = ref<string>('');
 const isProcessing = ref<boolean>(false);
 const timeRemaining = ref<number>(0);
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
@@ -77,6 +75,7 @@ function startCountdown(): void {
     countdownInterval = setInterval(updateCountdown, 1000);
 }
 
+
 function clearMessages(): void {
     error.value = '';
     success.value = '';
@@ -87,22 +86,31 @@ async function getQuote(): Promise<void> {
     isProcessing.value = true;
     
     try {
-        const response: Response = await fetch('/api/quote', {
+        const response = await fetch('/api/quote', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token.value}`
+            },
+            credentials: 'same-origin',
             body: JSON.stringify({ sku: sku.value, qty: qty.value }),
         });
-        
+
+        const data = await response.json();
+
         if (response.ok) {
-            const quoteData: Quote = await response.json();
-            quote.value = quoteData;
+            quote.value = {
+                quote_id: data.quote_id,
+                unit_price_cents: data.unit_price_cents,
+                quote_expires_at: data.quote_expires_at,
+            };
             startCountdown();
         } else {
-            const errorData: ApiError = await response.json();
-            error.value = errorData.error || 'Failed to get quote';
+            error.value = data.error || 'Failed to get quote';
         }
     } catch {
-        error.value = 'Network error occurred';
+        error.value = 'Failed to get quote';
     } finally {
         isProcessing.value = false;
     }
@@ -115,17 +123,24 @@ async function checkout(): Promise<void> {
     isProcessing.value = true;
     
     try {
-        const response: Response = await fetch('/api/checkout', {
+        const response = await fetch('/api/checkout', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'Idempotency-Key': crypto.randomUUID() 
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Idempotency-Key': crypto.randomUUID(),
+                'Authorization': `Bearer ${token.value}`
             },
+            credentials: 'same-origin',
             body: JSON.stringify({ quote_id: quote.value.quote_id }),
         });
-        
+
+        const data = await response.json();
+
         if (response.ok) {
-            success.value = 'Order created successfully!';
+            success.value = data.success;
             quote.value = null;
             timeRemaining.value = 0;
             if (countdownInterval) {
@@ -133,15 +148,21 @@ async function checkout(): Promise<void> {
                 countdownInterval = null;
             }
         } else {
-            const errorData: ApiError = await response.json();
-            error.value = errorData.error || 'Checkout failed';
+            error.value = data.error || 'Checkout failed';
         }
     } catch {
-        error.value = 'Network error occurred';
+        error.value = 'Checkout failed';
     } finally {
         isProcessing.value = false;
     }
 }
+
+
+onMounted( async () => {
+    const response = await fetch('/get-token');
+    const data = await response.json();
+    token.value = data.plainTextToken
+});
 
 onUnmounted(() => {
     if (countdownInterval) {
@@ -154,6 +175,7 @@ onUnmounted(() => {
     <div class="mx-auto max-w-xl space-y-4 p-6">
         <h1 class="text-2xl font-bold">Quote Demo</h1>
         
+
         <!-- Error Banner -->
         <div 
             v-if="error" 
@@ -169,12 +191,14 @@ onUnmounted(() => {
                 </div>
                 <div class="flex-1">
                     <p class="text-sm font-medium text-red-800">{{ errorMessage }}</p>
-                    <button 
-                        @click="getQuote"
-                        class="mt-2 inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                    >
-                        Get Fresh Quote
-                    </button>
+                    <div class="mt-2">
+                        <button 
+                            @click="getQuote"
+                            class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        >
+                            Get Fresh Quote
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -193,7 +217,7 @@ onUnmounted(() => {
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-green-800">{{ success }}</p>
+                    <h3 class="text-sm font-medium text-green-800">Order Placed Successfully</h3>
                 </div>
             </div>
         </div>
@@ -201,7 +225,11 @@ onUnmounted(() => {
         <!-- Quote Form -->
         <div class="space-y-3">
             <div class="flex gap-2">
-                <select v-model="sku" class="rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select 
+                    v-model="sku" 
+                    :disabled="isProcessing"
+                    class="rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
                     <option v-for="product in props.products" :key="product.sku" :value="product.sku">
                         {{ product.name }} ({{ product.sku }})
                     </option>
@@ -209,8 +237,9 @@ onUnmounted(() => {
                 <input 
                     type="number" 
                     v-model="qty" 
-                    min="1" 
-                    class="rounded-md border border-gray-300 px-3 py-2 w-20 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    min="1"
+                    :disabled="isProcessing"
+                    class="rounded-md border border-gray-300 px-3 py-2 w-20 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed" 
                 />
                 <button 
                     @click="getQuote" 
@@ -223,7 +252,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Quote Display -->
-        <div v-if="quote" class="border rounded-lg p-4 bg-gray-50">
+        <div v-if="quote" class="border rounded-lg p-4 bg-gray-50 text-black">
             <div class="space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="font-medium">Unit Price:</span>

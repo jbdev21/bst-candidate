@@ -13,7 +13,7 @@ class CheckoutController extends Controller
     public function store(CheckoutRequest $request)
     {
         $validated = $request->validated();
-        $key = $validated['headers']['Idempotency-Key'];
+        $key = $request->header('Idempotency-Key');
         $result = $this->checkout->beginCheckout($validated['quote_id'], $key);
 
         if (isset($result['error'])) {
