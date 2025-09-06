@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\QuoteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => inertia('Dashboard'));
-Route::get('/demo', fn () => inertia('QuoteDemo'));
+// Route::get('/demo', fn () => inertia('QuoteDemo'));
+Route::get('/demo', [QuoteController::class, 'demo']);
 
 // Route::get('/', function () {
 //     return Inertia::render('Dashboard');

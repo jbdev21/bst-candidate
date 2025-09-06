@@ -3,11 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\QuoteRequest;
+use App\Models\Product;
 use App\Services\PricingService;
+use Inertia\Inertia;
 
 class QuoteController extends Controller
 {
     public function __construct(private PricingService $pricing) {}
+
+
+    public function demo(){
+        $products = Product::all();
+        return Inertia::render('QuoteDemo', ['products' => $products]);
+    }
 
     public function store(QuoteRequest $request)
     {
