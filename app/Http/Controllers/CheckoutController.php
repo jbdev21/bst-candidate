@@ -25,6 +25,7 @@ class CheckoutController extends Controller
         return response()->json([
             'success' => $result['success'],
             'order_id' => $result['order_id'] ?? null,
+            'payment_intent_id' => $result['payment_intent_id'] ?? null,
         ]);
     }
 

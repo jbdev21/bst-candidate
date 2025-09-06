@@ -83,6 +83,7 @@ class CheckoutService
             return [
                 'success' => true,
                 'order_id' => $order->id,
+                'payment_intent_id' => $order->payment_intent_id,
                 'status' => 200,
             ];
         }
@@ -134,6 +135,7 @@ class CheckoutService
             return [
                 'success' => true,
                 'order_id' => $orderDTO->id,
+                'payment_intent_id' => $orderDTO->payment_intent_id,
                 'status' => 200,
             ];
         });

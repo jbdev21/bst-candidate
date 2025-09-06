@@ -12,16 +12,22 @@ class WebhookController extends Controller
     {
         $payload = $request->getContent();
         $sig = $request->header('X-Signature', '');
-        if (! $verifier->verify(env('PAYMENT_WEBHOOK_SECRET'), $payload, $sig)) {
+
+        // Verify HMAC with PAYMENT_WEBHOOK_SECRET
+        if (! $verifier->verify(config('app.payment_webhook_secret', env('PAYMENT_WEBHOOK_SECRET')), $payload, $sig)) {
             return response()->json(['error' => 'invalid_signature'], 400);
         }
+
         $data = $request->json()->all();
         $intent = $data['payment_intent_id'] ?? '';
         $event = $data['event'] ?? '';
+
         $order = Order::where('payment_intent_id', $intent)->first();
         if (! $order) {
             return response()->json(['error' => 'unknown_intent'], 400);
         }
+
+        // Handle payment state transitions
         if ($event === 'payment_authorized') {
             $order->update(['status' => 'authorized']);
         } elseif ($event === 'payment_captured' && $order->status === 'authorized') {
