@@ -16,7 +16,7 @@ class QuoteController extends Controller
         return response()->json([
             'quote_id' => $quote->id,
             'unit_price_cents' => $quote->unit_price_cents,
-            'quote_expires_at' => $quote->quote_expires_at->format('Y-m-d H:i:s'),
+            'quote_expires_at' => $quote->quote_expires_at->utc()->toISOString(),
         ]);
     }
 }

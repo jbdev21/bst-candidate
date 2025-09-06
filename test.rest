@@ -1,0 +1,10 @@
+@baseurl = https://bsttest.test/api
+@token = ''
+
+POST {{baseurl}}/quote
+content-type: application/json
+Authorization: Bearer {{token}}
+
+{
+
+}

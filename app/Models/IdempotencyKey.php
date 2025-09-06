@@ -8,5 +8,5 @@ class IdempotencyKey extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['key', 'purpose', 'created_at'];
+    protected $fillable = ['key', 'purpose', 'order_id', 'created_at'];
 }

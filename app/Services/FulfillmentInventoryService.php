@@ -16,4 +16,15 @@ class FulfillmentInventoryService
 
         return (int) $res->json('available_qty', 0) >= $qty;
     }
+
+    public function getAvailableQuantity(string $sku): int
+    {
+        // mocked local endpoint
+        $res = Http::acceptJson()->get(url("/api/mock-fulfillment/availability/{$sku}"));
+        if (! $res->ok()) {
+            return 0;
+        }
+
+        return (int) $res->json('available_qty', 0);
+    }
 }

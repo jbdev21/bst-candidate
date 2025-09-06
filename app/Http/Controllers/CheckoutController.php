@@ -10,13 +10,21 @@ class CheckoutController extends Controller
 {
     public function __construct(private CheckoutService $checkout) {}
 
-    public function store(CheckoutRequest $req)
+    public function store(CheckoutRequest $request)
     {
-        $key = request()->header('Idempotency-Key') ?? str()->uuid()->toString();
-        $success = $this->checkout->beginCheckout($req->quote_id, $key);
+        $validated = $request->validated();
+        $key = $validated['headers']['Idempotency-Key'];
+        $result = $this->checkout->beginCheckout($validated['quote_id'], $key);
+
+        if (isset($result['error'])) {
+            return response()->json([
+                'error' => $result['error'],
+            ], $result['status']);
+        }
 
         return response()->json([
-            'success' => $success,
+            'success' => $result['success'],
+            'order_id' => $result['order_id'] ?? null,
         ]);
     }
 

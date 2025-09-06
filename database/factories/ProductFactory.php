@@ -20,9 +20,9 @@ class ProductFactory extends Factory
             'sku' => fake()->word(),
             'name' => fake()->name(),
             'metal' => fake()->randomElement(['GOLD', 'SILVER']),
-            'weight_oz' => fake()->randomNumber(),
-            'premium_cents' => fake()->randomNumber(),
-            'active' => fake()->randomElement([true, false]),
+            'weight_oz' => fake()->randomFloat(3, 0.1, 100), // 0.1 to 100 oz with 3 decimal places
+            'premium_cents' => fake()->numberBetween(500, 50000), // $5 to $500 premium in cents
+            'active' => true,
         ];
     }
 }
