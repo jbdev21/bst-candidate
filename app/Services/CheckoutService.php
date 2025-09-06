@@ -19,12 +19,15 @@ class CheckoutService
 {
     public function __construct(private FulfillmentInventoryService $inventory) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function beginCheckout(string $quoteId, string $idempotencyKey): array
     {
         $quote = PriceQuote::findOrFail($quoteId);
 
-        // Check if quote has expired
-        if ($quote->quote_expires_at < now()) {
+        // Check if quote has expired (treat now() == quote_expires_at as expired)
+        if ($quote->quote_expires_at <= now()) {
             return [
                 'error' => 'REQUOTE_REQUIRED',
                 'status' => 409,
@@ -102,7 +105,7 @@ class CheckoutService
             $totalCents = $quote->unit_price_cents * $quote->qty;
 
             $orderDTO = new OrderDTO(
-                user_id: $quote->user_id,
+                user_id: (string) $quote->user_id,
                 total_cents: $totalCents,
                 status: 'pending',
                 payment_intent_id: 'pi_'.uniqid().'_'.bin2hex(random_bytes(8))
@@ -113,7 +116,7 @@ class CheckoutService
 
             // Create order line
             $orderLineDTO = new OrderLineDTO(
-                order_id: $orderModel->id,
+                order_id: (string) $orderModel->id,
                 sku: $quote->sku,
                 qty: $quote->qty,
                 unit_price_cents: $quote->unit_price_cents,
@@ -126,7 +129,7 @@ class CheckoutService
             $idempotencyKeyDTO = new IdempotencyKeyDTO(
                 key: $idempotencyKey,
                 purpose: 'checkout',
-                order_id: $orderModel->id,
+                order_id: (string) $orderModel->id,
                 created_at: now()->toDateTimeString()
             );
 

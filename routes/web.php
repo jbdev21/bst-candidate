@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\QuoteController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -8,7 +7,7 @@ use Inertia\Inertia;
 
 Route::get('/', fn () => inertia('Welcome'))->name('home');
 Route::get('/demo', [QuoteController::class, 'demo'])->middleware(['auth']);
-Route::get('/get-token', function(){
+Route::get('/get-token', function () {
     return Auth::user()->createToken(uniqid());
 });
 

@@ -24,5 +24,4 @@ class CheckoutRequest extends FormRequest
             'idempotency_key' => $this->header('Idempotency-Key'),
         ]);
     }
-
 }

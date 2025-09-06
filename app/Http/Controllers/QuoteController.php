@@ -21,8 +21,8 @@ class QuoteController extends Controller
     public function store(QuoteRequest $request)
     {
         $quote = $this->pricing->quote(
-            $request->sku, 
-            (int) $request->qty, 
+            $request->sku,
+            (int) $request->qty,
             (int) env('PRICE_TOLERANCE_BPS', 50),
             (string) $request->user()->id
         );
