@@ -23,7 +23,7 @@ it('accepts valid webhook and updates order status to authorized', function () {
 
     // Prepare webhook payload for payment_authorized event
     $payload = json_encode(['payment_intent_id' => $checkout['payment_intent_id'], 'event' => 'payment_authorized']);
-    $sig = hash_hmac('sha256', $payload, env('PAYMENT_WEBHOOK_SECRET'));
+    $sig = hash_hmac('sha256', $payload, config('webhook.payment_webhook_secret'));
 
     // Send webhook with valid signature
     $response = $this->withHeaders(['X-Signature' => $sig, 'Content-Type' => 'application/json'])
@@ -54,7 +54,7 @@ it('handles payment_captured transition from authorized status', function () {
 
     // First, authorize the payment
     $authorizePayload = json_encode(['payment_intent_id' => $checkout['payment_intent_id'], 'event' => 'payment_authorized']);
-    $authorizeSig = hash_hmac('sha256', $authorizePayload, env('PAYMENT_WEBHOOK_SECRET'));
+    $authorizeSig = hash_hmac('sha256', $authorizePayload, config('webhook.payment_webhook_secret'));
 
     $this->withHeaders(['X-Signature' => $authorizeSig, 'Content-Type' => 'application/json'])
         ->postJson('/api/webhooks/payments', json_decode($authorizePayload, true))
@@ -62,7 +62,7 @@ it('handles payment_captured transition from authorized status', function () {
 
     // Then capture the payment
     $capturePayload = json_encode(['payment_intent_id' => $checkout['payment_intent_id'], 'event' => 'payment_captured']);
-    $captureSig = hash_hmac('sha256', $capturePayload, env('PAYMENT_WEBHOOK_SECRET'));
+    $captureSig = hash_hmac('sha256', $capturePayload, config('webhook.payment_webhook_secret'));
 
     $response = $this->withHeaders(['X-Signature' => $captureSig, 'Content-Type' => 'application/json'])
         ->postJson('/api/webhooks/payments', json_decode($capturePayload, true));
@@ -92,7 +92,7 @@ it('rejects payment_captured when order is not authorized', function () {
 
     // Try to capture payment without authorization
     $capturePayload = json_encode(['payment_intent_id' => $checkout['payment_intent_id'], 'event' => 'payment_captured']);
-    $captureSig = hash_hmac('sha256', $capturePayload, env('PAYMENT_WEBHOOK_SECRET'));
+    $captureSig = hash_hmac('sha256', $capturePayload, config('webhook.payment_webhook_secret'));
 
     $response = $this->withHeaders(['X-Signature' => $captureSig, 'Content-Type' => 'application/json'])
         ->postJson('/api/webhooks/payments', json_decode($capturePayload, true));

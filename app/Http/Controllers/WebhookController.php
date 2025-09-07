@@ -14,7 +14,7 @@ class WebhookController extends Controller
         $sig = $request->header('X-Signature', '');
 
         // Verify HMAC with PAYMENT_WEBHOOK_SECRET
-        if (! $verifier->verify(config('app.payment_webhook_secret', env('PAYMENT_WEBHOOK_SECRET')), $payload, $sig)) {
+        if (! $verifier->verify(config('webhook.payment_webhook_secret'), $payload, $sig)) {
             return response()->json(['error' => 'invalid_signature'], 400);
         }
 
